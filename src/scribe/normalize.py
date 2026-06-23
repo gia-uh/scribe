@@ -17,6 +17,10 @@ _LIGATURES = {
 # Private Use Area: BMP (E000-F8FF) + planes 15/16 — unrecoverable glyphs.
 _PUA = re.compile(r"[-\U000f0000-\U0010fffd]")
 _DEHYPHEN = re.compile(r"(\w)-\n(\w)")
+# Soft-hyphen (U+00AD) and the NOT-SIGN (U+00AC) are used as line-wrap hyphens by
+# many typesetters/OCR engines (common in scanned Spanish gazettes: "Po¬ der").
+# Between two word characters they are always hyphenation artifacts → rejoin.
+_SOFT_HYPHEN = re.compile(r"(\w)[¬­][ \t\n]*(\w)")
 _TRAILING_WS = re.compile(r"[ \t]+$", re.MULTILINE)
 _BLANKS = re.compile(r"\n{3,}")
 # Control chars except \n (\x0a) and \t (\x09).
@@ -37,6 +41,7 @@ def normalize_text(s: str) -> tuple[str, list[str]]:
         warnings.append(f"{len(pua)} private-use glyph(s) dropped")
     s = _CTRL.sub("", s)
     s = s.replace(" ", " ")  # NBSP → space
+    s = _SOFT_HYPHEN.sub(r"\1\2", s)
     s = _DEHYPHEN.sub(r"\1\2", s)
     s = _TRAILING_WS.sub("", s)
     s = _BLANKS.sub("\n\n", s)

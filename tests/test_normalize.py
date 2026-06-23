@@ -11,6 +11,13 @@ def test_dehyphenation_across_linebreak():
     assert "hyphenation works" in out
 
 
+def test_soft_hyphen_linewrap_rejoined():
+    # NOT-SIGN (¬) and soft-hyphen (U+00AD) as typeset/OCR line-wrap hyphens,
+    # as seen in scanned Spanish gazettes ("Po¬ der" → "Poder").
+    out, _ = normalize_text("Po¬ der y mu­ chas cosas")
+    assert "Poder" in out and "muchas" in out
+
+
 def test_pua_chars_stripped_and_warned():
     out, warns = normalize_text("cleantext")
     assert out.rstrip("\n") == "cleantext"
