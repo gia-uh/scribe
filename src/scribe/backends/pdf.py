@@ -45,7 +45,18 @@ def convert(data: bytes) -> ExtractResult:
                     md = _table_to_md(t.extract())
                     if md:
                         parts.append(md)
-                words = page.extract_words(extra_attrs=["size", "fontname"])
+                # x_tolerance_ratio scales the word-split gap by font size, so
+                # PDFs that encode few/no space glyphs (common in LaTeX output)
+                # don't collapse whole lines into one "word". upright=True drops
+                # rotated text (e.g. arXiv margin watermarks) that would otherwise
+                # interleave as noise.
+                words = [
+                    w
+                    for w in page.extract_words(
+                        x_tolerance_ratio=0.15, extra_attrs=["size", "fontname", "upright"]
+                    )
+                    if w.get("upright", True)
+                ]
 
                 def _in_table(w: dict, bboxes=table_bboxes) -> bool:
                     cx = (w["x0"] + w["x1"]) / 2

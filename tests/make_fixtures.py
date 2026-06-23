@@ -25,6 +25,38 @@ def two_column():
     c.save()
 
 
+def two_column_spanning():
+    """Two columns PLUS a full-width line crossing the gutter (a figure caption).
+    Guards the peak-valley detector: a single spanning element must NOT collapse
+    the two columns into one."""
+    c = canvas.Canvas(str(OUT / "two_column_spanning.pdf"), pagesize=A4)
+    w, h = A4
+    c.setFont("Helvetica", 11)
+    # full-width caption spanning the centre gutter
+    c.drawString(60, h - 80, "Figure 1: a wide caption that spans across both columns of the page")
+    for i in range(8):
+        c.drawString(60, h - 120 - i * 20, f"COL1_{chr(65 + i)} left column body text here")
+    for i in range(8):
+        c.drawString(w / 2 + 30, h - 120 - i * 20, f"COL2_{chr(65 + i)} right column body text")
+    c.save()
+
+
+def watermark():
+    """Normal horizontal text plus a rotated margin stamp (like arXiv's). The
+    rotated text must be dropped by the upright filter."""
+    c = canvas.Canvas(str(OUT / "watermark.pdf"), pagesize=A4)
+    _, h = A4
+    c.setFont("Helvetica", 11)
+    c.drawString(80, h - 100, "Horizontal body text that should survive extraction.")
+    c.saveState()
+    c.translate(20, 300)
+    c.rotate(90)
+    c.setFont("Helvetica", 14)
+    c.drawString(0, 0, "ROTATEDWATERMARK987 should be dropped")
+    c.restoreState()
+    c.save()
+
+
 def hyphenation():
     c = canvas.Canvas(str(OUT / "hyphenation.pdf"), pagesize=A4)
     c.setFont("Helvetica", 11)
@@ -61,6 +93,8 @@ def headings():
 if __name__ == "__main__":
     OUT.mkdir(parents=True, exist_ok=True)
     two_column()
+    two_column_spanning()
+    watermark()
     hyphenation()
     table()
     headings()

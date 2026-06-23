@@ -17,30 +17,25 @@ def segment_columns(
         hi = min(bins - 1, int(w["x1"] / bw))
         for b in range(lo, hi + 1):
             occ[b] += 1
-    # A gutter is the widest run of empty bins in the central region.
-    central = list(range(int(bins * 0.30), int(bins * 0.70)))
-    best: tuple[int, int] | None = None
-    run_start: int | None = None
-    prev: int | None = None
-    for b in central:
-        if occ[b] == 0:
-            if run_start is None:
-                run_start = b
-        elif run_start is not None:
-            run = (run_start, b - 1)
-            if best is None or (run[1] - run[0]) > (best[1] - best[0]):
-                best = run
-            run_start = None
-        prev = b
-    if run_start is not None and prev is not None:  # run extends to end of central
-        run = (run_start, prev)
-        if best is None or (run[1] - run[0]) > (best[1] - best[0]):
-            best = run
-    if best is None or (best[1] - best[0]) < 3:  # gutter < ~3% page width → single col
+
+    # Find the lowest-occupancy bin in the central band — a candidate gutter.
+    lo_b, hi_b = int(bins * 0.35), int(bins * 0.65)
+    valley_bin = min(range(lo_b, hi_b), key=lambda b: occ[b])
+    valley = occ[valley_bin]
+
+    # Compare the valley to the column peaks on each side. A real two-column
+    # gutter sits well below both peaks even when a figure/equation occasionally
+    # spans it (so we don't require a perfectly empty gutter).
+    left_peak = max(occ[int(bins * 0.10) : valley_bin], default=0)
+    right_peak = max(occ[valley_bin : int(bins * 0.90)], default=0)
+    if min(left_peak, right_peak) == 0 or valley >= 0.45 * min(left_peak, right_peak):
         return [words]
-    split_x = (best[0] + best[1] + 1) / 2 * bw
+
+    split_x = (valley_bin + 0.5) * bw
     left = [w for w in words if (w["x0"] + w["x1"]) / 2 < split_x]
     right = [w for w in words if (w["x0"] + w["x1"]) / 2 >= split_x]
-    if not left or not right:
+    # Require both sides to be substantially populated (guards against splitting a
+    # single narrow column whose centre happens to be empty).
+    if len(left) < 0.15 * len(words) or len(right) < 0.15 * len(words):
         return [words]
     return [left, right]

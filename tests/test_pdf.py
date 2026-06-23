@@ -47,3 +47,16 @@ def test_meta_reports_columns():
     r = convert((C / "two_column.pdf").read_bytes())
     assert r.meta["columns"] == 2
     assert r.meta["backend"] == "pdf"
+
+
+def test_two_columns_survive_a_gutter_spanning_line():
+    # A full-width caption crossing the gutter must NOT collapse the columns.
+    r = convert((C / "two_column_spanning.pdf").read_bytes())
+    assert r.meta["columns"] == 2
+    assert r.markdown.index("COL1_H") < r.markdown.index("COL2_A")
+
+
+def test_rotated_watermark_is_dropped():
+    r = convert((C / "watermark.pdf").read_bytes())
+    assert "ROTATEDWATERMARK987" not in r.markdown
+    assert "Horizontal body text" in r.markdown
