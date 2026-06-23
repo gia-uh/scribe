@@ -20,6 +20,12 @@ def test_heading_detected_by_font_size():
     assert "Big Title" in md.splitlines()[0]
 
 
+def test_paragraph_dehyphenates_wrapped_word():
+    words = [_w("hyphen-", 100), _w("ation", 115), _w("continues", 130)]
+    md = words_to_markdown(words)
+    assert "hyphenation continues" in md
+
+
 def test_bullet_list_item():
     words = [
         _w("•", 100),

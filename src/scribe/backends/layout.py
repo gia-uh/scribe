@@ -24,6 +24,20 @@ def _line_size(line: list[dict]) -> float:
     return statistics.median(w["size"] for w in line)
 
 
+def _join_paragraph(lines: list[str]) -> str:
+    """Join wrapped lines into a paragraph, merging hyphenated line-breaks
+    (a line ending in letter+'-' fuses with the next without a space)."""
+    s = ""
+    for ln in lines:
+        if not s:
+            s = ln
+        elif re.search(r"[A-Za-z]-$", s):
+            s = s[:-1] + ln
+        else:
+            s = s + " " + ln
+    return s
+
+
 def words_to_markdown(column_words: list[dict]) -> str:
     """Turn a column's worth of words into Markdown: headings (by font size),
     bullet/numbered lists, and reflowed paragraphs."""
@@ -36,7 +50,7 @@ def words_to_markdown(column_words: list[dict]) -> str:
 
     def flush() -> None:
         if para:
-            out.append(" ".join(para))
+            out.append(_join_paragraph(para))
             para.clear()
 
     for line in lines:
