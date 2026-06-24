@@ -7,6 +7,20 @@ _BULLET = re.compile(r"^[•‣⁃●◦\-–\*]$")
 _NUMBERED = re.compile(r"^(\d{1,2})[.)]$")
 
 
+def _is_noise_line(text: str) -> bool:
+    """True for scanner-speck / dot-leader / stray-punctuation lines that OCR
+    emits from bad scans (". . . . 1 . . . . I", "- ' .", ":"). Deterministic,
+    conservative: keeps anything with real words, drops symbol-dominated scraps."""
+    t = text.strip()
+    if not t:
+        return True
+    letters = sum(c.isalpha() for c in t)
+    nonspace = sum(not c.isspace() for c in t)
+    if letters == 0:
+        return True
+    return letters < 5 and letters / max(1, nonspace) < 0.30
+
+
 def group_lines(words: list[dict], y_tol: float = 3.0) -> list[list[dict]]:
     """Group words into visual lines by `top` proximity, each line sorted x0."""
     lines: list[list[dict]] = []
@@ -55,7 +69,7 @@ def words_to_markdown(column_words: list[dict]) -> str:
 
     for line in lines:
         text = " ".join(w["text"] for w in line).strip()
-        if not text:
+        if not text or _is_noise_line(text):
             continue
         first = line[0]["text"]
         size = _line_size(line)
@@ -69,7 +83,8 @@ def words_to_markdown(column_words: list[dict]) -> str:
             out.append(f"{m.group(1)}. " + " ".join(w["text"] for w in line[1:]).strip())
             continue
         ratio = size / body
-        if ratio >= 1.15 and len(text) <= 120:
+        has_words = sum(c.isalpha() for c in text) >= 2
+        if has_words and ratio >= 1.15 and len(text) <= 120:
             flush()
             level = 1 if ratio >= 1.6 else 2 if ratio >= 1.3 else 3
             out.append("#" * level + " " + text)

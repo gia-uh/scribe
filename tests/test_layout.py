@@ -1,4 +1,19 @@
-from scribe.backends.layout import group_lines, words_to_markdown
+from scribe.backends.layout import _is_noise_line, group_lines, words_to_markdown
+
+
+def test_is_noise_line_drops_scanner_specks():
+    for junk in [". . . . 1 . . . . I", "- ' .", ", . . . , $", "'", ":", "   "]:
+        assert _is_noise_line(junk), junk
+
+
+def test_is_noise_line_keeps_real_text():
+    for real in [
+        "ARTICULO 1.-Se declara ilicita la Ley",
+        "EXTRAORDINARIA JA HABANA",
+        "ASAMBLEA NACIONAL DEL PODER POPULAR",
+        "Art. 5",
+    ]:
+        assert not _is_noise_line(real), real
 
 
 def _w(t, top, size=10.0, x0=50.0):
