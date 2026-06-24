@@ -19,18 +19,4 @@ jobs:
       - name: Test
         run: uv run pytest -q
       - name: License guard (no GPL/AGPL in the tree)
-        run: |
-          uv run python - <<'PY'
-          import importlib.metadata as m
-          bad = []
-          for d in m.distributions():
-              name = d.metadata["Name"]
-              blob = (d.metadata.get("License") or "")
-              blob += " " + " ".join(d.metadata.get_all("Classifier") or [])
-              low = blob.lower()
-              if "gpl" in low and "lgpl" not in low.replace("agpl", ""):
-                  bad.append(name)
-          if bad:
-              raise SystemExit(f"copyleft dependency detected: {sorted(set(bad))}")
-          print("license guard OK")
-          PY
+        run: uv run pytest tests/test_licenses.py -q
