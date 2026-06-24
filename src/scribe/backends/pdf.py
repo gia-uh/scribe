@@ -26,6 +26,42 @@ def _table_to_md(tbl: list[list]) -> str:
     return "\n".join(out)
 
 
+def page_to_markdown(page) -> tuple[str, int]:
+    """Deterministic Markdown for a single pdfplumber page, plus the column count.
+    Shared by ``convert`` (whole-doc) and the optional VLM enhancer (per-page)."""
+    parts: list[str] = []
+    tables = page.find_tables()
+    table_bboxes = [t.bbox for t in tables]
+    for t in tables:
+        md = _table_to_md(t.extract())
+        if md:
+            parts.append(md)
+    # x_tolerance_ratio scales the word-split gap by font size, so PDFs that
+    # encode few/no space glyphs (common in LaTeX output) don't collapse whole
+    # lines into one "word". upright=True drops rotated text (e.g. arXiv margin
+    # watermarks) that would otherwise interleave as noise.
+    words = [
+        w
+        for w in page.extract_words(
+            x_tolerance_ratio=0.15, extra_attrs=["size", "fontname", "upright"]
+        )
+        if w.get("upright", True)
+    ]
+
+    def _in_table(w: dict, bboxes=table_bboxes) -> bool:
+        cx = (w["x0"] + w["x1"]) / 2
+        cy = (w["top"] + w["bottom"]) / 2
+        return any(x0 <= cx <= x1 and y0 <= cy <= y1 for (x0, y0, x1, y1) in bboxes)
+
+    words = [w for w in words if not _in_table(w)]
+    cols = segment_columns(words, page.width, page.height)
+    for col in cols:
+        md = words_to_markdown(col)
+        if md.strip():
+            parts.append(md)
+    return "\n\n".join(p for p in parts if p.strip()), len(cols)
+
+
 def convert(data: bytes) -> ExtractResult:
     try:
         pdf = pdfplumber.open(io.BytesIO(data))
@@ -39,39 +75,10 @@ def convert(data: bytes) -> ExtractResult:
         with pdf:
             n = len(pdf.pages)
             for page in pdf.pages:
-                tables = page.find_tables()
-                table_bboxes = [t.bbox for t in tables]
-                for t in tables:
-                    md = _table_to_md(t.extract())
-                    if md:
-                        parts.append(md)
-                # x_tolerance_ratio scales the word-split gap by font size, so
-                # PDFs that encode few/no space glyphs (common in LaTeX output)
-                # don't collapse whole lines into one "word". upright=True drops
-                # rotated text (e.g. arXiv margin watermarks) that would otherwise
-                # interleave as noise.
-                words = [
-                    w
-                    for w in page.extract_words(
-                        x_tolerance_ratio=0.15, extra_attrs=["size", "fontname", "upright"]
-                    )
-                    if w.get("upright", True)
-                ]
-
-                def _in_table(w: dict, bboxes=table_bboxes) -> bool:
-                    cx = (w["x0"] + w["x1"]) / 2
-                    cy = (w["top"] + w["bottom"]) / 2
-                    return any(
-                        x0 <= cx <= x1 and y0 <= cy <= y1 for (x0, y0, x1, y1) in bboxes
-                    )
-
-                words = [w for w in words if not _in_table(w)]
-                cols = segment_columns(words, page.width, page.height)
-                max_cols = max(max_cols, len(cols))
-                for col in cols:
-                    md = words_to_markdown(col)
-                    if md.strip():
-                        parts.append(md)
+                md, ncols = page_to_markdown(page)
+                max_cols = max(max_cols, ncols)
+                if md.strip():
+                    parts.append(md)
     except ValueError:
         raise
     except Exception as exc:

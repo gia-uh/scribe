@@ -17,7 +17,11 @@ Design + plan live in the workspace vault (not this repo):
 
 - **MIT only.** Every runtime dep must be MIT/BSD/Apache. **Never** PyMuPDF/
   `pymupdf4llm` (AGPL). CI/`tests` guard this — keep it true.
-- **No LLM, no torch, no ML models** in the conversion path. Ever.
+- **No LLM, no torch, no ML models** in the default conversion path. Ever.
+  The *only* LLM touchpoint is `scribe.enhance_pdf` (`src/scribe/enhance.py`) —
+  opt-in, behind the `[llm]` extra, never imported by the core, grounded-
+  correction mode only (never free transcription). Findings that justify the
+  design: `vault/+/agent_drafts/design_docs/2026-06-23-scribe-optional-vlm-hypotheses.md`.
 - Python 3.12, `uv` for everything (`uv run …`), never `pip install`.
 
 ## Layout
@@ -28,6 +32,7 @@ src/scribe/
 ├── result.py       ExtractResult(markdown, title, warnings, meta)
 ├── normalize.py    PURE: NFKC, ligatures, de-hyphenation, PUA strip, whitespace
 ├── cli.py          `scribe <file> [-o out.md]`
+├── enhance.py      OPT-IN VLM grounded correction for scans ([llm] extra only)
 ├── _markitdown.py  lazy MarkItDown singleton (fallback only)
 └── backends/
     ├── pdf.py      pdfplumber + columns + layout + tables

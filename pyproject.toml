@@ -14,6 +14,11 @@ dependencies = [
     "markitdown>=0.1.5",
 ]
 
+[project.optional-dependencies]
+# Opt-in VLM enhancement for scanned PDFs (scribe.enhance_pdf). The core never
+# imports these; install only if you want AI-assisted grounded correction.
+llm = ["httpx>=0.28", "pypdfium2>=4"]
+
 [project.scripts]
 scribe = "scribe.cli:main"
 

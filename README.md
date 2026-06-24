@@ -70,6 +70,38 @@ expansion (`ﬁ→fi`), de-hyphenation of line-wraps, private-use-glyph strippin
 and whitespace cleanup — this is what fixes the garbled text LaTeX-produced PDFs
 emit.
 
+## Optional: AI-assisted enhancement (opt-in, not the default)
+
+The **default path is 100% no-LLM** — that's scribe's identity and its safe
+default. But for genuinely bad *scanned* PDFs (where the embedded OCR text is
+full of character errors), there is an **opt-in** enhancer that uses a small
+vision model to correct the OCR — in **grounded mode only**: it is given
+scribe's deterministic text as an anchor plus the page image, and told to fix
+character errors without inventing anything.
+
+```bash
+pip install "scribe-md[llm]"   # adds httpx + pypdfium2
+```
+
+```python
+import scribe
+result = scribe.enhance_pdf(pdf_bytes, api_key="sk-...")          # OpenRouter by default
+# or point at any OpenAI-compatible endpoint (e.g. a local LM Studio):
+result = scribe.enhance_pdf(pdf_bytes, api_key="x",
+                            base_url="http://localhost:1234/v1/chat/completions",
+                            model="...")
+result.meta["enhanced"]   # True
+result.warnings[0]        # "AI-assisted correction ... verify numbers/names ..."
+```
+
+Safeguards, because small VLMs hallucinate: **free image→Markdown transcription
+is deliberately not offered** (ungrounded, a small model will confidently invent
+legal text); each page's correction is **rejected and falls back to raw OCR** if
+its length strays from the anchor; API/parse failures degrade gracefully per
+page; and output is always tagged `enhanced=True` with a verify warning. **Even
+so, numbers and proper names can still be misread — treat enhanced output as
+AI-assisted, not authoritative.**
+
 ## Limitations (by design)
 
 - **No LaTeX equation reconstruction.** Math-bearing text is made readable and
