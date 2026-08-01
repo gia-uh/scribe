@@ -45,6 +45,15 @@ def _backend_csv(data: bytes) -> ExtractResult:
     return csv_backend.convert(data)
 
 
+def _backend_iwork(ext: str) -> Callable[[bytes], ExtractResult]:
+    def run(data: bytes) -> ExtractResult:
+        from .backends import iwork as iwork_backend
+
+        return iwork_backend.convert(data, ext)
+
+    return run
+
+
 def _backend_text(data: bytes) -> ExtractResult:
     try:
         body = data.decode("utf-8")
@@ -60,6 +69,10 @@ _BACKENDS: dict[str, Callable[[bytes], ExtractResult]] = {
     "pptx": _backend_pptx,
     "xlsx": _backend_xlsx,
     "csv": _backend_csv,
+    "pages": _backend_iwork("pages"),
+    "key": _backend_iwork("key"),
+    "keynote": _backend_iwork("keynote"),
+    "numbers": _backend_iwork("numbers"),
     "txt": _backend_text,
     "md": _backend_text,
     "markdown": _backend_text,

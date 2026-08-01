@@ -39,8 +39,33 @@ src/scribe/
     ├── columns.py  PURE: vertical-gutter column segmentation
     ├── layout.py   PURE: heading/list inference, paragraph reflow, de-hyphenation
     ├── docx.py / pptx.py / xlsx.py / csv.py   native backends
+    ├── iwork.py     Pages/Keynote/Numbers — both document generations
+    ├── _iwa.py      PURE: iWork container — zip layout, Snappy, protobuf walk
+    ├── _iwork_tables.py  PURE-ish: TST table models → grids (cell storage v5)
     └── fallback.py markitdown wrapper for the long tail
 ```
+
+## iWork — read this before touching `iwork.py`
+
+The design doc is **in the AInBox repo**, because magpie's ingest is what asked
+for it: `repos/ainbox/docs/2026-08-01-iwork-import-design.md`. It carries the
+container table (three zip generations), the archive-type/field-number table
+that the decoder relies on, and *how each number was established*.
+
+Three rules that the fixtures enforce, each with a test that fails if you break
+it (verified by mutation, not by hope):
+
+- **Slide order comes from the slide tree**, never from member filenames.
+- **Master slides are skipped.** A theme has ~12 of them, all full of
+  placeholder copy; including them buries the real slides.
+- **Decode by flags, not by declared cell type.** The cell header's flags word
+  says exactly which values are present; the type enum is never consulted, so it
+  cannot be got wrong.
+
+Cell storage **version 5 only** (every Numbers since 2020). Version 4's value
+layout did not yield to the fixtures we have — `numbers-parser`, a project
+dedicated to this format, also refuses it. Undecoded cells warn; they never
+guess.
 
 The three PURE modules (`normalize`, `columns`, `layout`) hold the tricky logic
 and are unit-tested in isolation — touch them with tests first.

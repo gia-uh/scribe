@@ -62,8 +62,36 @@ scribe report.pdf -o out.md  # write to a file
 | PPTX | `python-pptx` (slides, bullets, tables, speaker notes) | first-class |
 | XLSX | `openpyxl` (one table per sheet) | first-class |
 | CSV | stdlib `csv` | first-class |
+| **Pages / Keynote / Numbers** | own pure-Python iWork reader | first-class |
 | TXT / MD | passthrough | first-class |
 | HTML / EPUB / RTF / ODT / … | `markitdown` fallback | best-effort |
+
+### Apple iWork (`.pages`, `.key`, `.numbers`)
+
+Nothing else reads these: `markitdown` has no iWork backend, `kreuzberg` has an
+open request for one, `keynote-parser` and `numbers-parser` each cover a single
+app and need `python-snappy` (a C library) plus the `protobuf` runtime and
+megabytes of generated Apple schema. `scribe` reads all three, in **pure Python,
+with no new dependencies** — the Snappy variant and the protobuf wire walk are
+about 70 lines between them.
+
+Both document generations are supported: iWork '09's `index.xml`/`index.apxl`
+and the `Index/*.iwa` format from iWork '13 onward (including the "saved as a
+package" shape, where the real index is a nested `Index.zip`).
+
+- **Pages** — body text in reading order, with headings from the paragraph
+  style's name, falling back to font size relative to the document's body size
+  so localised style names (`Título`, `Überschrift`) still produce headings.
+- **Keynote** — one section per slide **in presentation order** (which the
+  member filenames do not give you), slide titles, bullets, tables and speaker
+  notes. Master slides are skipped, so the theme's placeholder copy stays out.
+- **Numbers** — sheets and tables as Markdown tables, including dates, formula
+  results and pop-up cells' selected values.
+
+Password-protected documents raise with a message that says so. Where a table's
+cells are in the 2013–2016 "pre-BNC" cell format, which is not decoded, the text
+still converts and a warning names what was skipped — rather than guessing at
+numbers.
 
 Every backend's output passes through one **normalizer**: NFKC, ligature
 expansion (`ﬁ→fi`), de-hyphenation of line-wraps, private-use-glyph stripping,

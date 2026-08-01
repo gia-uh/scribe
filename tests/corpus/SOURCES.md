@@ -31,5 +31,36 @@ binary fixtures to track for those formats.
 
 ## Tier 2 — real-world documents
 
-Add only CC-BY or public-domain files here, each with its source URL and
-license recorded below. (None committed yet.)
+Add only permissively-licensed (MIT / Apache-2.0 / CC-BY / public-domain) files
+here, each with its source URL and license recorded below.
+
+Apple iWork documents cannot be generated without a Mac, so these are vendored
+from two upstream test corpora. Each has had its preview JPEGs and `thumbs/`
+stripped (~2× smaller; no member any backend reads was touched).
+
+From **Apache Tika** (`tika-parser-apple-module/src/test/resources/test-documents/`),
+Apache License 2.0 — <https://github.com/apache/tika>:
+
+- `iwork09.pages` ← `testPages.pages`. iWork '09 `index.xml`. Carries real
+  `Title` / `Heading 1` / `Heading 2` paragraph styles, so it pins heading
+  detection by style name.
+- `iwork09.key` ← `testKeynote.key`. iWork '09 `index.apxl`; three slides, one
+  with a speaker note.
+- `iwork09.numbers` ← `testNumbers.numbers`. iWork '09 with two real tables. The
+  Transactions table has a `col-span` cell in row 0 and a pop-up (`sf:pm`)
+  column, which together pin grid alignment and selected-choice resolution; its
+  running Balance column is arithmetic self-check for the whole grid.
+- `iwork13.pages` ← `testPages2013.pages`. The `Index/*.iwa` generation.
+- `iwork13.key` ← `testKeynote2018.key`. Saved as a **package** — the index is a
+  nested `Presentation.key/Index.zip` — with 12 master slides carrying
+  Indonesian placeholder copy, which is what the master-skipping test asserts is
+  absent.
+- `iwork_protected.pages` ← `testPagesPwdProtected.pages`. Password-protected;
+  its members use Apple's own compression methods, which is how encryption is
+  detected. Committed **verbatim** (it cannot be rewritten).
+
+From **numbers-parser**, MIT — <https://github.com/masaccio/numbers-parser>:
+
+- `iwork13.numbers` ← `tests/data/test-1.numbers`. Storage version 5 (what every
+  Numbers since 2020 writes), two sheets, three tables, with two deliberately
+  empty cells that pin cell placement.
