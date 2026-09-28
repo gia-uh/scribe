@@ -81,6 +81,5 @@ in `columns.py`, heading font-size ratios in `layout.py`.
 
 ## Conventions
 
-- Ships to `main` (no PR cycle).
 - Conventional commits, one logical change each.
 - `uv run ruff check .` must pass.
